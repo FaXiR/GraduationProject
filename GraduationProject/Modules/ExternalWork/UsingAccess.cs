@@ -110,41 +110,30 @@ namespace GraduationProject.Modules.ExternalWork
             }
 
             this.DataSource = DataSource;
+            this.Provider = Provider;
             this.Password = Password;
             this.Login = Login;
 
-            string err = null;
+            Connect();           
+        }
 
-            if (Provider == null)
+        /// <summary>
+        /// Упрощенное взаимодействие с БД Access.
+        /// </summary>
+        /// <param name="DataSource">Путь к БД</param>
+        public UsingAccess(string DataSource)
+        {
+            if (!System.IO.File.Exists(DataSource))
             {
-                try
-                {
-                    this.Provider = "Microsoft.Jet.OLEDB.4.0";
-                    myConnection = new OleDbConnection(this.ConnectString);
-                    ConnectChech();
-                }
-                catch (Exception ex)
-                {
-                    err += ex.ToString() + "\n\n";
-                    try
-                    {
-                        this.Provider = "Microsoft.ACE.OLEDB.12.0";
-                        myConnection = new OleDbConnection(this.ConnectString);
-                        ConnectChech();
-                    }
-                    catch (Exception ex2)
-                    {
-                        err += ex2.ToString();
-                        throw new Exception(err);
-                    }                    
-                }
+                throw new Exception("Файл не найден " + DataSource);
             }
-            else
-            {
-                this.Provider = Provider;
-                myConnection = new OleDbConnection(this.ConnectString);
-                ConnectChech();
-            }
+
+            this.DataSource = DataSource;
+            this.Provider = null;
+            this.Password = null;
+            this.Login = null;
+
+            Connect();
         }
 
         /// <summary>
@@ -188,6 +177,45 @@ namespace GraduationProject.Modules.ExternalWork
 
             if (AutoOpen)
                 ConnectClose();
+        }
+
+        /// <summary>
+        /// Подключение к БД
+        /// </summary>
+        private void Connect()
+        {
+            string err = null;
+
+            if (Provider == null)
+            {
+                try
+                {
+                    this.Provider = "Microsoft.Jet.OLEDB.4.0";
+                    myConnection = new OleDbConnection(this.ConnectString);
+                    ConnectChech();
+                }
+                catch (Exception ex)
+                {
+                    err += ex.ToString() + "\n\n";
+                    try
+                    {
+                        this.Provider = "Microsoft.ACE.OLEDB.12.0";
+                        myConnection = new OleDbConnection(this.ConnectString);
+                        ConnectChech();
+                    }
+                    catch (Exception ex2)
+                    {
+                        err += ex2.ToString();
+                        throw new Exception(err);
+                    }
+                }
+            }
+            else
+            {
+                this.Provider = Provider;
+                myConnection = new OleDbConnection(this.ConnectString);
+                ConnectChech();
+            }
         }
     }
 }

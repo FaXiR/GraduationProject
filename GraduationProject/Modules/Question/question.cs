@@ -6,7 +6,7 @@ namespace GraduationProject.Modules.Question
     /// <summary>
     /// Формирования вопроса с ответами
     /// </summary>
-    class question
+    class Question
     {
         /// <summary>
         /// Статус сохраненности вопроса. Задавайте False, если вы сохранили изменения.
@@ -16,7 +16,7 @@ namespace GraduationProject.Modules.Question
         /// <summary>
         /// Выбранный вариант(индекс) ответа
         /// </summary>
-        public int selectAnswer { get; private set; } = -1;
+        public int selectAnswer { get; set; } = -1;
 
         /// <summary>
         /// Вопросительное предложение
@@ -38,7 +38,7 @@ namespace GraduationProject.Modules.Question
         /// <summary>
         /// Варианты ответа
         /// </summary>
-        public List<string> AnswerList
+        public List<Answer> AnswerList
         {
             get
             {
@@ -50,17 +50,20 @@ namespace GraduationProject.Modules.Question
                 answerList = value;
             }
         }
-        private List<string> answerList = new List<string>();
+        private List<Answer> answerList = new List<Answer>();
 
         /// <summary>
         /// Используется для формирования вопроса с ответами
         /// </summary>
         /// <param name="questionText">Вопросительное предложение</param>
         /// <param name="answerListText">Варианты ответов</param>
-        public question(string questionText, List<string> answerListText)
+        public Question(string questionText, List<string> answerListText)
         {
             this.questionText = questionText;
-            this.answerList.AddRange(answerListText);
+            foreach (string answer in answerListText)
+            {
+                this.answerList.Add(new Answer(answer, null, null));
+            }
         }
 
         /// <summary>
@@ -68,43 +71,48 @@ namespace GraduationProject.Modules.Question
         /// </summary>
         /// <param name="questionText">Вопросительное предложение</param>
         /// <param name="answerListText">Варианты ответов</param>
-        public question(string questionText, params string[] answerListText)
+        public Question(string questionText, params string[] answerListText)
         {
             this.questionText = questionText;
-            this.answerList.AddRange(answerListText);
+            foreach (string answer in answerListText)
+            {
+                this.answerList.Add(new Answer(answer, null, null));
+            }
+        }
+
+        /// <summary>
+        /// Используется для формирования вопроса с ответами, используйте для формирования ответов с принадлежностью к группам
+        /// </summary>
+        /// <param name="questionText">Вопросительное предложение</param>
+        public Question(string questionText)
+        {
+            this.questionText = questionText;
         }
 
         /// <summary>
         /// Добавляет варианты ответа
         /// </summary>
         /// <param name="answerText">Варианты ответа</param>
-        public void AddAnswer(params string[] answerText)
+        public void AddAnswerList(params string[] answerText)
         {
             IsEdited = true;
 
-            foreach (string answ in answerText)
+            foreach (string answer in answerText)
             {
-                answerList.Add(answ);
+                this.answerList.Add(new Answer(answer, null, null));
             }
         }
 
         /// <summary>
-        /// Удаление вариантов ответа
+        /// Добавляет вариант ответа
         /// </summary>
-        /// <param name="answerText">Текст удаляемых ответа</param>
-        public void DeleteAnswer(params string[] answerText)
+        /// <param name="answerText">Текст ответа</param>
+        /// <param name="answerGroup">Группа ответа</param>
+        /// <param name="answerVolue">Значение ответа</param>
+        public void AddAnswerList(string answerText, string answerGroup, string answerVolue)
         {
-            foreach (string answ in answerText)
-            {
-                if (answerList.Remove(answ))
-                {
-                    IsEdited = true;
-                }
-                else
-                {
-                    throw new KeyNotFoundException($@"Значение ""{answ}"" не найдено");
-                }
-            }
+            IsEdited = true;
+            this.answerList.Add(new Answer(answerText, answerGroup, answerVolue));
         }
 
         /// <summary>
@@ -142,26 +150,19 @@ namespace GraduationProject.Modules.Question
 
             selectAnswer = answerIndex;
         }
+    }
 
-        /// <summary>
-        /// Задает индекс выбранно ответа 
-        /// </summary>
-        /// <param name="answerText">Текст ответа</param>
-        public void SelectAnswer(string answerText)
+    class Answer
+    {
+        public Answer(string text, string group, string volue)
         {
-            if (answerText == null)
-            {
-                selectAnswer = -1;
-                return;
-            }
-
-            int selectAnswerTemp = answerList.IndexOf(answerText);
-            if (selectAnswerTemp == -1)
-            {
-                throw new KeyNotFoundException($@"Варант ответа ""{answerText}"" для удаления не найден");
-            }
-
-            selectAnswer = selectAnswerTemp;
+            Text = text;
+            Group = group;
+            Volue = volue;
         }
+
+        public string Text { get; set; }
+        public string Group { get; set; }
+        public string Volue { get; set; }
     }
 }
