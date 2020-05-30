@@ -5,15 +5,84 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GraduationProject"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Конструктор опросов" Height="450" Width="800">
     <Grid>
-        <Grid x:Name="Authorization">
-            <TextBlock x:Name="Login"/>
-            <TextBlock x:Name="Password"/>
+        <!-- МиниИнформационнаяПанель -->
+        <Grid Height="64" VerticalAlignment="Top">
+            <!-- Название текущего пункта -->
+            <TextBlock Text="Главное меню" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="16,0,0,0" FontSize="24" FontWeight="Bold" Foreground="#FF0A6A00" x:Name="F_LargeText"/>
+            <!-- Текущий пользователь -->
+            <Grid HorizontalAlignment="Right" MaxWidth="320">
+                <StackPanel Margin="0,0,0,4" VerticalAlignment="Center" HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Image Source="Resources/Image/User.png" Height="42" HorizontalAlignment="Center" Margin="4,0,8,0" x:Name="F_UserLogo"/>
+                    <TextBlock Text="Гость" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,8,0" FontSize="16" x:Name="F_UserName"/>
+                </StackPanel>
+                <Rectangle Fill="#00000000" MouseEnter="F_RectangleOnUser_MouseEnter" x:Name="F_RectangleOnUser" MouseLeave="F_RectangleOnUser_MouseLeave" MouseDown="F_RectangleOnUser_MouseDown" Margin="2,8"/>
+            </Grid>
+            <!-- Разделяющая полоса -->
+            <Rectangle Height="2" VerticalAlignment="Bottom" Fill="#7F0A6A00"/>
         </Grid>
+        <!-- Панель содержания -->
+        <Grid Margin="0,64,0,0">
+            <!-- Главное окно -->
+            <Grid Visibility="Hidden" x:Name="F_MainWindow" d:IsHidden="True">
+                <!-- Выбор действий -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" >
+                    <Button Background="{x:Null}" Content=" Создать опрос " Click="Button_Click_CreatePoll"/>
+                    <Button Background="{x:Null}" Content=" Пройти опрос " Click="Button_Click_PassPoll" Margin="8,0,0,0"/>
+                </StackPanel>
+            </Grid>
 
-        <Grid x:Name="Core">
+            <!-- Авторизация -->
+            <Grid Visibility="Hidden" x:Name="F_Authorization">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <TextBlock Text="Логин:" Margin="9,2,4,0" FontSize="14"/>
+                        <TextBox Height="25" Width="160" FontSize="14" x:Name="F_Login" KeyUp="F_KeyUp_Login"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Пароль:" Margin="0,2,4,0" FontSize="14"/>
+                        <PasswordBox Height="25" Width="160" FontSize="14" x:Name="F_Password" KeyUp="F_KeyUp_Password"/>
+                    </StackPanel>
+                    <Button Content="Авторизоваться" HorizontalAlignment="Center" FontSize="12" Width="100" Margin="0,0,0,24" Background="{x:Null}" Click="F_Button_ClickToEnter"/>
+                    <Grid>
+                        <Button Content="Войти как Гость" FontSize="10" Width="100" HorizontalAlignment="Left" Margin="8,0,0,0" Background="{x:Null}" Click="F_Button_ClickToEnterAtUser"/>
+                        <Button Content="Регистрация" FontSize="10" Width="80" HorizontalAlignment="Right" Margin="0,0,8,0" Background="{x:Null}" Click="F_ButtonClick_CreateNewUser"/>
+                    </Grid>
+                </StackPanel>
+            </Grid>
 
+            <!-- Управление аккаунтом -->
+            <Grid Visibility="Hidden" x:Name="F_AccountEdit" Margin="8,8,8,0">
+                <TextBlock Text="Данные пользователя" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8,0,0,0" FontSize="16" FontWeight="Bold" Foreground="#FF0A6A00"/>
+                <Rectangle VerticalAlignment="Top" Fill="#2F0A6A00" Margin="8,22,16,0" Height="1"/>
+                <TextBlock Text="Изменение пароля" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8,142,0,0" FontSize="16" FontWeight="Bold" Foreground="#FF0A6A00"/>
+                <Rectangle VerticalAlignment="Top" Fill="#2F0A6A00" Margin="8,164,16,0" Height="1"/>
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel Margin="8,0,0,0">
+                        <TextBlock Text="Логин:" FontSize="16" HorizontalAlignment="Right" Margin="0,22,0,8"/>
+                        <TextBlock Text="ФИО:" FontSize="16" HorizontalAlignment="Right" Margin="0,0,0,8"/>
+                        <TextBlock Text="Уровень допуска:" FontSize="16" HorizontalAlignment="Right" Margin="0,0,0,8"/>
+                        <TextBlock Text="Старый пароль:" FontSize="16" HorizontalAlignment="Right" Margin="0,55,0,8"/>
+                        <TextBlock Text="Новый пароль:" FontSize="16" HorizontalAlignment="Right" Margin="0,0,0,8"/>
+                        <TextBlock Text="Новый пароль:" FontSize="16" HorizontalAlignment="Right" Margin="0,0,0,8"/>
+                    </StackPanel>
+                    <StackPanel Margin="4,0,0,0">
+                        <TextBox x:Name="F_Account_Login" FontSize="12" HorizontalAlignment="Left" Margin="0,24,0,8" MinWidth="160" MaxWidth="600" Height="21"/>
+                        <TextBox x:Name="F_Account_FIO" FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,8" MinWidth="160" MaxWidth="600" Height="21"/>
+                        <TextBox x:Name="F_Account_LVL" FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,8" MinWidth="160" MaxWidth="600" IsEnabled="False" Height="21"/>
+                        <PasswordBox x:Name="F_Account_OldPass" FontSize="12" HorizontalAlignment="Left" Margin="0,55,0,8" MinWidth="160" MaxWidth="600" Height="21"/>
+                        <PasswordBox x:Name="F_Account_NewPass" FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,8" MinWidth="160" MaxWidth="600" Height="21"/>
+                        <PasswordBox x:Name="F_Account_NewPass2" FontSize="12" HorizontalAlignment="Left" Margin="0,0,0,4" MinWidth="160" MaxWidth="600" Height="21"/>
+                    </StackPanel>
+                </StackPanel>
+                <Button x:Name="F_Account_GoToMainWindow" Content="Вернуться в Главное меню" VerticalAlignment="Top" HorizontalAlignment="Left" Width="160" Margin="308,114,16,0" Background="{x:Null}" Click="F_Account_GoToMainWindow_Click" />
+                <Button x:Name="F_Account_SaveButton" Content="Сохранить" VerticalAlignment="Top" HorizontalAlignment="Left" Width="160" Margin="140,114,0,0" Background="{x:Null}" Click="F_Account_SaveButton_Click"/>
+                <Button x:Name="F_Account_ButtonChangePassword" Content="Изменить" VerticalAlignment="Top" HorizontalAlignment="Left" Width="160" Margin="140,254,0,0" Background="{x:Null}" Click="F_ButtonChangePassword_Click"/>
+                <Button x:Name="F_Account_LogOut" Content="Выйти из аккаунта" VerticalAlignment="Top" HorizontalAlignment="Left" Width="160" Margin="308,254,0,0" Background="{x:Null}" Click="F_ButtonLogOut_Click"/>
+            </Grid>
+
+            <Grid x:Name="Core" d:IsHidden="True"></Grid>
         </Grid>
     </Grid>
 </Window>
