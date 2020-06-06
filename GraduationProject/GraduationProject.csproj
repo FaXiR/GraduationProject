@@ -90,6 +90,7 @@
     <Compile Include="Modules\Encryption\Encrypt.cs" />
     <Compile Include="Modules\ExternalWork\UsingAccess.cs" />
     <Compile Include="Modules\Question\Question.cs" />
+    <Compile Include="Modules\Question\QuestionTextManipulator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

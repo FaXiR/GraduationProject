@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Win32;
+using GraduationProject.Modules.Question;
 
 namespace GraduationProject
 {
@@ -31,6 +32,11 @@ namespace GraduationProject
             Authorization,
             AccountEdit,
             AccountCreate,
+            PollList,
+            PollPass,
+            PollEditMenu,
+            PollEditing,
+            PollResultList,
         }
 
         /// <summary>
@@ -78,6 +84,18 @@ namespace GraduationProject
         /// </summary>
         private int UserToleranceLvl = 2;
 
+        /// <summary>
+        /// Выбранная редактируемая таблицы опроса
+        /// /// </summary>
+        private string PollSelectedToEdit;
+
+        /// <summary>
+        /// Выбранная редактируемая таблицы опроса
+        /// /// </summary>
+        private string PollSelectedToPoling;
+
+        private QuestionTextManipulator QTM = new QuestionTextManipulator();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -93,72 +111,6 @@ namespace GraduationProject
                 SelectGrid(Grids.Authorization);
                 F_Password.Focus();
             }
-
-
-            var QList = new List<Modules.Question.Question>
-            {
-                new Modules.Question.Question("Как долго Вы ожидали ответ от нашего центра обслуживания клиентов?",
-                                              "Очень долго",
-                                              "Долго",
-                                              "В пределах нормы",
-                                              "Быстро",
-                                              "Реакция была почти мгновенная."),
-
-                new Modules.Question.Question("Насколько внимательно слушали Вас представители центра обслуживания клиентов?",
-                                              "Очень внимательно",
-                                              "Внимательно",
-                                              "Не слишком внимательно",
-                                              "Совсем невнимательно"),
-
-                new Modules.Question.Question("Насколько активны были представители обслуживания клиентов при попытке помочь Вам?",
-                                              "Очень активны",
-                                              "Активны",
-                                              "Скорее активны",
-                                              "Не слишком активны",
-                                              "Совсем неактивны"),
-
-                new Modules.Question.Question("Как быстро сумели представители нашего обслуживания клиентов Вам помочь?",
-                                              "Очень быстро",
-                                              "Быстро",
-                                              "В пределах нормы",
-                                              "Медленно",
-                                              "Очень медленно"),
-
-                new Modules.Question.Question("По Вашему мнению, представитель нашего центра обслуживания клиентов достаточно хорошо информирован?",
-                                              "Очень хорошо",
-                                              "Хорошо",
-                                              "Скорее хорошо",
-                                              "Скорее плохо",
-                                              "Плохо"),
-
-                new Modules.Question.Question("Насколько понятна была информация, которую Вы получили у нашего обслуживания клиентов?",
-                                              "Полностью понятна",
-                                              "Понятна",
-                                              "Почти понятна",
-                                              "Не слишком понятна",
-                                              "Совсем непонятна"),
-
-                new Modules.Question.Question("На сколько Ваших вопросов ответили представители нашего обслуживания клиентов?",
-                                              "На все вопросы",
-                                              "На большинство вопросов",
-                                              "На половину вопросов",
-                                              "На меньшинство вопросов",
-                                              "На мои вопросы не было отвечено."),
-
-                new Modules.Question.Question("Насколько был для Вас наш центр обслуживание клиентов полезным?",
-                                              "Очень полезно",
-                                              "Частично полезно",
-                                              "Не слишком полезно",
-                                              "Не было полезно"),
-
-                new Modules.Question.Question("Каково было для Вас сотрудничество с нашим обслуживанием клиентов?",
-                                              "Немного лучше, чем были мои ожидания.",
-                                              "На немного лучше, чем были мои ожидания.",
-                                              "Такое, как я ожидал/а.",
-                                              "Немного хуже, чем были мои ожидания.",
-                                              "Другое")
-            };
-            //StartPoling(QList, Core, false);
         }
 
         private void StartPoling(List<Modules.Question.Question> questList, Grid grid, bool RandomAnswerPosition)
@@ -173,15 +125,22 @@ namespace GraduationProject
             bool GoNext = false;
             string Select = null;
 
-            foreach (RadioButton radioButton in RadioButtonAnswerList)
+            if (RadioButtonAnswerList.Count == 0)
             {
-                if (radioButton.IsChecked == true)
+                GoNext = true;
+            }
+            else
+            {
+                foreach (RadioButton radioButton in RadioButtonAnswerList)
                 {
-                    MessageBox.Show(radioButton.Name + "\n" + radioButton.Content);
-                    GoNext = true;
-                    Select = radioButton.Name.Replace("a", "");
+                    if (radioButton.IsChecked == true)
+                    {
+                        GoNext = true;
+                        Select = radioButton.Name.Replace("a", "");
+                    }
                 }
             }
+            
 
             if (GoNext)
             {
@@ -196,8 +155,12 @@ namespace GraduationProject
 
                 if (QuestionIndex >= QuestionList.Count)
                 {
-                    //MessageBox.Show("Опрос был завершен");
                     Core.Children.Clear();
+                    MessageBox.Show("Вы ответили на все вопросы в анкете");
+
+                    UsAc.ExecuteNonQuery($@"INSERT INTO Result (PollTableName, Result) VALUES (""{PollSelectedToPoling}"", ""{QTM.QuestionListResultToString(QuestionList)}"")");
+
+                    SelectGrid(Grids.MainWindow);
                     return;
                 }
 
@@ -284,6 +247,8 @@ namespace GraduationProject
                 Content = ButtonContent,
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(0, 2, 0, 0),
+                Background = null,
+                Width = 120,
             };
             Butto.Click += NextQuestion_Click;
             WrPanel.Children.Add(Butto);
@@ -308,7 +273,7 @@ namespace GraduationProject
                 {
                     try
                     {
-                        File.Delete(AppDomain.CurrentDomain.BaseDirectory + Key.settingsFileName);
+                        File.Delete(Environment.CurrentDirectory + Key.settingsFileName);
                     }
                     catch (Exception ex2)
                     {
@@ -334,9 +299,10 @@ namespace GraduationProject
                     try
                     {
                         UsAc = new UsingAccess(dialog.FileName);
+                        dbPath = dialog.FileName;
 
                         //Сохранение пути в файле
-                        File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
+                        File.WriteAllText(Environment.CurrentDirectory + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
                     }
                     catch (Exception ex)
                     {
@@ -365,7 +331,12 @@ namespace GraduationProject
                                 catch (Exception ex) { MessageBox.Show(ex.ToString()); };
                                 try
                                 {
-                                    UsAc.ExecuteNonQuery("Create Table Polls(PollTableName string NULL, Title string NULL, Description string NULL, AuthorLogin string NULL, Ovners string NULL, DateOfCreation string NULL)");
+                                    UsAc.ExecuteNonQuery("Create Table Polls(PollTableName string PRIMARY KEY, Title string NULL, Description string NULL, AuthorLogin string NULL, Ovners string NULL, DateOfCreation string NULL, MinUserLvl integer NULL, CODE MEMO NULL)");
+                                }
+                                catch (Exception ex) { MessageBox.Show(ex.ToString()); };
+                                try
+                                {
+                                    UsAc.ExecuteNonQuery($"Create Table Result (PollTableName string NULL, Result MEMO NULL)");
                                 }
                                 catch (Exception ex) { MessageBox.Show(ex.ToString()); };
                                 try
@@ -377,7 +348,7 @@ namespace GraduationProject
                                 UsAc.ConnectClose();
 
                                 //Сохранение пути в файле
-                                File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
+                                File.WriteAllText(Environment.CurrentDirectory + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
 
                                 //Создание учетной записи
                                 SelectGrid(Grids.AccountCreate);
@@ -386,7 +357,7 @@ namespace GraduationProject
                             else
                             {
                                 //Просто выйти из приложения
-                                Environment.Exit(1);
+                                Environment.Exit(0);
                             }
                         }
                     }
@@ -394,7 +365,7 @@ namespace GraduationProject
                 else
                 {
                     //Просто выйти из приложения
-                    Environment.Exit(1);
+                    Environment.Exit(0);
                 }
 
             }
@@ -404,8 +375,8 @@ namespace GraduationProject
                 if (!CheckDB(dbPath))
                 {
                     MessageBox.Show("Используемый файл базы данных не имеет корректных данных для работы с приложением. Перезапустите приложение, чтобы указать новый путь.");
-                    File.Delete(AppDomain.CurrentDomain.BaseDirectory + Key.settingsFileName);
-                    Environment.Exit(1);
+                    File.Delete(Environment.CurrentDirectory + Key.settingsFileName);
+                    Environment.Exit(0);
                 }
                 else if (UsAc.Execute("SELECT * FROM [User]").Count == 0)
                 {
@@ -422,7 +393,7 @@ namespace GraduationProject
         private void LoadingData()
         {
             //Имена и пути файлов, расположенных в каталоге с .EXE файлом приложения
-            string[] allfiles = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory);
+            string[] allfiles = Directory.GetFiles(Environment.CurrentDirectory.ToString());
 
             //Определение ближайщего файла БД с корректным содержимым
             foreach (string filename in allfiles)
@@ -512,19 +483,57 @@ namespace GraduationProject
             return false;
         }
 
+        private void SelectPoll(object sender, RoutedEventArgs e)
+        {
+            string s = ((Button)e.OriginalSource).Name.ToString();
+
+            string tableName = s.Substring(1);
+            string QuestionSTRING = UsAc.Execute($@"SELECT CODE From Polls where PollTableName = ""{tableName}""").Table.Rows[0]["CODE"].ToString();
+            var z = QTM.StringToQuestionList(QuestionSTRING);
+
+            StartPoling(z, Core, false);
+
+            SelectGrid(Grids.PollPass);
+
+            PollSelectedToPoling = tableName;
+        }
+
+        private void SelectPollToEdit(object sender, RoutedEventArgs e)
+        {
+            string s = ((Button)e.OriginalSource).Name.ToString();
+            string tableName = s.Substring(1);
+            //MessageBox.Show("527", tableName);
+            var table = UsAc.Execute($@"SELECT * FROM Polls Where PollTableName = ""{tableName}""");
+
+
+            EditPoll(table);
+            SelectGrid(Grids.PollEditing);
+        }
+
         private void Button_Click_CreatePoll(object sender, RoutedEventArgs e)
         {
+            if (UserToleranceLvl >= 2)
+            {
+                MessageBox.Show("Данная возможность доступна только для сотрдуников");
+                return;
+            }
 
+            SelectGrid(Grids.PollEditMenu);
+        }
+
+        private void Button_Click_PassResult(object sender, RoutedEventArgs e)
+        {
+            SelectGrid(Grids.PollResultList);
         }
 
         private void Button_Click_PassPoll(object sender, RoutedEventArgs e)
         {
-
+            SelectGrid(Grids.PollList);
         }
 
         private void F_RectangleOnUser_MouseEnter(object sender, MouseEventArgs e)
         {
-            F_RectangleOnUser.Fill = new SolidColorBrush(Color.FromArgb(125, 229, 229, 255));
+            F_RectangleOnUser.Fill = new SolidColorBrush(Color.FromArgb(50, 229, 229, 255));
         }
 
         private void F_RectangleOnUser_MouseLeave(object sender, MouseEventArgs e)
@@ -580,7 +589,7 @@ namespace GraduationProject
 
             if (CheckLogPas())
             {
-                StreamWriter str = new StreamWriter(AppDomain.CurrentDomain.BaseDirectory + Key.settingsFileName);
+                StreamWriter str = new StreamWriter(Environment.CurrentDirectory + Key.settingsFileName);
                 str.WriteLine(Encrypt.Shifrovka(dbPath, Key.encryptionKeyInFile));
                 str.WriteLine(F_Login.Text);
                 str.Close();
@@ -631,9 +640,19 @@ namespace GraduationProject
 
         private void SelectGrid(Grids grid)
         {
+            F_StackPanelPollList.Children.Clear();
+            F_StackPanelPollListOnUser.Children.Clear();
+
             F_MainWindow.Visibility = Visibility.Hidden;
             F_Authorization.Visibility = Visibility.Hidden;
             F_AccountEdit.Visibility = Visibility.Hidden;
+            F_PollList.Visibility = Visibility.Hidden;
+            F_PollEditMainMenu.Visibility = Visibility.Hidden;
+            F_PollEdit.Visibility = Visibility.Hidden;
+            Core.Visibility = Visibility.Hidden;
+            F_PollListResult.Visibility = Visibility.Hidden;
+
+            PollSelectedToPoling = null;
 
             switch (grid)
             {
@@ -657,7 +676,6 @@ namespace GraduationProject
 
                     F_Account_Login.IsEnabled = false;
                     F_Account_OldPass.IsEnabled = true;
-                    F_Account_GoToMainWindow.IsEnabled = true;
                     F_Account_SaveButton.IsEnabled = true;
                     F_Account_LogOut.IsEnabled = true;
 
@@ -678,7 +696,6 @@ namespace GraduationProject
 
                     F_Account_Login.IsEnabled = true;
                     F_Account_OldPass.IsEnabled = false;
-                    F_Account_GoToMainWindow.IsEnabled = false;
                     F_Account_SaveButton.IsEnabled = false;
                     F_Account_LogOut.IsEnabled = false;
 
@@ -688,12 +705,722 @@ namespace GraduationProject
 
                     F_Account_ButtonChangePassword.Content = "Создать";
                     break;
+
+                case Grids.PollList:
+                    CreatePollList();
+                    F_LargeText.Text = "Список доступных опросов";
+                    F_PollList.Visibility = Visibility.Visible;
+                    break;
+
+                case Grids.PollPass:
+                    F_LargeText.Text = "Прохождение опроса";
+                    Core.Visibility = Visibility.Visible;
+                    break;
+
+                case Grids.PollEditMenu:
+                    F_LargeText.Text = "Управление опросами";
+                    F_PollEditMainMenu.Visibility = Visibility.Visible;
+                    CreatepollListToEdit();
+                    break;
+
+                case Grids.PollEditing:
+                    F_LargeText.Text = "Редактирование опроса";
+                    F_PollEdit.Visibility = Visibility.Visible;
+                    break;
+
+                case Grids.PollResultList:
+                    CreatepollListToResult();
+                    F_LargeText.Text = "Просмотр результатов";
+                    F_PollListResult.Visibility = Visibility.Visible;
+                    break;
             }
+        }
+
+        private void EditPoll(DataView table)
+        {
+            F_PollEditing.Children.Clear();
+
+            //Создание трех панелей
+            var InfoOfPollStackPanel = new StackPanel()
+            {
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            var RequiredInfoStackPanel = new StackPanel()
+            {
+                Margin = new Thickness(0, 0, 0, 8),
+                IsEnabled = false,
+                Visibility = Visibility.Hidden,
+                Height = 0,
+            };
+            var QuestionStackPanel = new StackPanel()
+            {
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+
+            //Создание заголовков
+            {
+                var MainText1 = new TextBlock
+                {
+                    Text = "Информация об опросе",
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(10, 106, 0)),
+                    Margin = new Thickness(8, 0, 0, 0),
+                };
+
+                var MainText2 = new TextBlock
+                {
+                    Text = "Первичные данные, заполняемые пользователями",
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(10, 106, 0)),
+                    Margin = new Thickness(8, 0, 0, 0),
+                };
+                var MainText3 = new TextBlock
+                {
+                    Text = "Вопросы, на которые отвечает пользователь",
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(10, 106, 0)),
+                    Margin = new Thickness(8, 0, 0, 0),
+                };
+
+                var MainRectangle1 = new Rectangle
+                {
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Fill = new SolidColorBrush(Color.FromArgb(45, 10, 106, 0)),
+                    Margin = new Thickness(8, 0, 16, 4),
+                    Height = 1,
+                };
+
+                var MainRectangle2 = new Rectangle
+                {
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Fill = new SolidColorBrush(Color.FromArgb(45, 10, 106, 0)),
+                    Margin = new Thickness(8, 0, 16, 4),
+                    Height = 1,
+                };
+
+                var MainRectangle3 = new Rectangle
+                {
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Fill = new SolidColorBrush(Color.FromArgb(45, 10, 106, 0)),
+                    Margin = new Thickness(8, 0, 16, 4),
+                    Height = 1,
+                };
+
+
+                InfoOfPollStackPanel.Children.Add(MainText1);
+                InfoOfPollStackPanel.Children.Add(MainRectangle1);
+                //RequiredInfoStackPanel.Children.Add(MainText2);
+                //RequiredInfoStackPanel.Children.Add(MainRectangle2);
+                QuestionStackPanel.Children.Add(MainText3);
+                QuestionStackPanel.Children.Add(MainRectangle3);
+            }
+
+            //Создание полей ввода для информации об Опросе
+            {
+                var InfoOfPollStackPanelTitle = new Grid()
+                {
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                var TextBlockTitle = new TextBlock()
+                {
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Text = "Название опроса",
+                    Width = 140,
+                    Height = 22,
+                };
+                var TextBoxTitle = new TextBox()
+                {
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(114, 0, 0, 0),
+                    MinWidth = 100,
+                    // Height = 22,
+                    //MaxWidth = 800,
+                    TextWrapping = TextWrapping.Wrap,
+                };
+
+                InfoOfPollStackPanelTitle.Children.Add(TextBlockTitle);
+                InfoOfPollStackPanelTitle.Children.Add(TextBoxTitle);
+                InfoOfPollStackPanel.Children.Add(InfoOfPollStackPanelTitle);
+
+                var InfoOfPollStackPanelDescription = new Grid()
+                {
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                var TextBlockDescroption = new TextBlock()
+                {
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Text = "Описание опроса",
+                    Width = 140,
+                    Height = 22,
+                };
+                var TextBoxDescription = new TextBox()
+                {
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(114, 0, 0, 0),
+                    MinWidth = 100,
+                    //Height = 22,
+                    //MaxWidth = 800,
+                    TextWrapping = new TextWrapping(),
+                };
+
+                InfoOfPollStackPanelDescription.Children.Add(TextBlockDescroption);
+                InfoOfPollStackPanelDescription.Children.Add(TextBoxDescription);
+                InfoOfPollStackPanel.Children.Add(InfoOfPollStackPanelDescription);
+
+                var RadioBittonpollForEmployee = new CheckBox()
+                {
+                    Content = "Опрос доступен только для зарегистрированных сотрдуников",
+                };
+
+                InfoOfPollStackPanel.Children.Add(RadioBittonpollForEmployee);
+            }
+
+            //Создание полей ввода для информации об Пользоваетеле
+            {
+                var CheckBoxFIO = new CheckBox()
+                {
+                    Content = "ФИО пользователя",
+                    Margin = new Thickness(0, 0, 0, 4),
+                };
+
+                var CheckBoxBirthday = new CheckBox()
+                {
+                    Content = "Дата рождения",
+                    Margin = new Thickness(0, 0, 0, 4),
+                };
+
+                //RequiredInfoStackPanel.Children.Add(CheckBoxFIO);
+                //RequiredInfoStackPanel.Children.Add(CheckBoxBirthday);
+            }
+
+            //Кнопка, добавляющая блок вопрос/ответ
+            var ButtonAddFillResponce = new Button()
+            {
+                Background = null,
+                Content = "Добавить блок вопрос/ответ",
+                Width = 240,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(4, 0, 4, 16),
+            };
+            ButtonAddFillResponce.Click += FF_Click_AddFillResponce;
+
+            //Добавление всего этого добра в форму
+            F_PollEditing.Children.Add(InfoOfPollStackPanel);
+            F_PollEditing.Children.Add(RequiredInfoStackPanel);
+            F_PollEditing.Children.Add(QuestionStackPanel);
+            F_PollEditing.Children.Add(ButtonAddFillResponce);
+
+            //Содержимое опросника
+            if (table == null)
+            {
+                AddFullResponce((StackPanel)F_PollEditing.Children[2]);
+                AddFullResponce((StackPanel)F_PollEditing.Children[2]);
+
+                PollSelectedToEdit = null;
+            }
+            else
+            {
+                PollSelectedToEdit = table.Table.Rows[0]["PollTableName"].ToString();
+
+                //Первичные данные Название, Описание, ЮзерЛВЛ
+                string Name = table.Table.Rows[0]["Title"].ToString();
+                string Descript = table.Table.Rows[0]["Description"].ToString();
+
+                ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[2]).Children[1]).Text = Name;
+                ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[3]).Children[1]).Text = Descript;
+
+                bool check = true;
+                if (table.Table.Rows[0]["MinUserLvl"].ToString() == "2")
+                    check = false;
+                ((CheckBox)((StackPanel)F_PollEditing.Children[0]).Children[4]).IsChecked = check;
+
+
+                string QuestionTEXT = table.Table.Rows[0]["CODE"].ToString();
+
+                List<Question> QuestionList = QTM.StringToQuestionList(QuestionTEXT);
+                for (int i = 0; i < QuestionList.Count; i++)
+                {
+                    //Создание вопроса
+                    AddFullResponce((StackPanel)F_PollEditing.Children[2]);
+
+                    //Текст вопроса
+                    ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[2]).Children[i + 2]).Children[1]).Text = QuestionList[i].QuestionText;
+
+                    //Добавление вариантов ответа
+                    foreach (Answer answer in QuestionList[i].AnswerList)
+                    {
+                        var TextBoxx = new TextBox()
+                        {
+                            Text = answer.Text,
+                            Margin = new Thickness(0, 0, 0, 4),
+                            MinWidth = 60,
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                        };
+                        ((StackPanel)((Grid)((StackPanel)F_PollEditing.Children[2]).Children[i + 2]).Children[3]).Children.Add(TextBoxx);
+                    }
+                }
+            }
+        }
+
+        private void Button_Click_SavePoll(object sender, RoutedEventArgs e)
+        {
+            var rand = new Random();
+
+            bool NewPoll = false;
+            string PollTableName = null;
+            if (PollSelectedToEdit == null)
+            {
+                NewPoll = true;
+                int ChisloPoputok = 0;
+                while (ChisloPoputok < 100)
+                {
+                    PollTableName = rand.Next(1, 60000).ToString();
+
+                    ChisloPoputok++;
+                    var result = UsAc.Execute($@"SELECT PollTableName From Polls where PollTableName = ""{PollTableName}""");
+
+                    if (result.Count == 0)
+                        break;
+                }
+            }
+            else
+            {
+                PollTableName = PollSelectedToEdit;
+            }
+
+            List<Question> QuestionList = new List<Question>();
+            //Создание массива с вопросами
+            {
+                int QuestCount = ((StackPanel)F_PollEditing.Children[2]).Children.Count - 2;
+
+                for (int i = 0; i < QuestCount; i++)
+                {
+                    var Quest = (Grid)((StackPanel)F_PollEditing.Children[2]).Children[i + 2];
+
+                    string QuestText = ((TextBox)Quest.Children[1]).Text;
+                    int AnswerCount = (((StackPanel)Quest.Children[3]).Children.Count);
+
+                    var AnswerList = new List<string>();
+                    for (int z = 0; z < AnswerCount; z++)
+                    {
+                        AnswerList.Add(((TextBox)((StackPanel)Quest.Children[3]).Children[z]).Text);
+                    }
+
+                    QuestionList.Add(new Question(QuestText, AnswerList));
+                }
+            }
+
+            //Перегонка массива в текст
+            string QuestionListOnString = QTM.QuestionListToString(QuestionList);
+
+            string Title = ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[2]).Children[1]).Text;
+            string Description = ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[3]).Children[1]).Text;
+            int MinUserLvl = 2;
+            if ((bool)((CheckBox)((StackPanel)F_PollEditing.Children[0]).Children[4]).IsChecked)
+            {
+                MinUserLvl = 1;
+            }
+
+            if (NewPoll)
+            {
+                UsAc.ExecuteNonQuery($@"INSERT INTO Polls (PollTableName, Title, Description, AuthorLogin, DateOfCreation, MinUserLvl, CODE) VALUES (""{PollTableName}"", ""{Title}"",""{Description}"", ""{UserLogin}"", ""{DateTime.Now.ToShortDateString()}"",{MinUserLvl} , ""{QuestionListOnString}"")");
+            }
+            else
+            {
+                UsAc.ExecuteNonQuery($@"UPDATE Polls SET Title=""{Title}"", Description=""{Description}"", MinUserLvl={MinUserLvl}, CODE=""{QuestionListOnString}"" WHERE PollTableName = ""{PollTableName}""");
+            }
+
+            SelectGrid(Grids.PollEditMenu);
+        }
+
+        private void FF_Click_AddResponce(object sender, RoutedEventArgs e)
+        {
+            StackPanel SelectGrid = (StackPanel)((Grid)((Button)e.OriginalSource).Parent).Children[3];
+
+            var TextBoxx = new TextBox()
+            {
+                Margin = new Thickness(0, 0, 0, 4),
+                MinWidth = 60,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+            SelectGrid.Children.Add(TextBoxx);
+        }
+
+        private void FF_Click_DeleteResponce(object sender, RoutedEventArgs e)
+        {
+            StackPanel SelectGrid = (StackPanel)((Grid)((Button)e.OriginalSource).Parent).Children[3];
+
+            if (SelectGrid.Children.Count == 0)
+            {
+                return;
+            }
+
+            SelectGrid.Children.Remove(SelectGrid.Children[SelectGrid.Children.Count - 1]);
+        }
+
+        //Вызов кнопкой добавления куска опроса
+        private void FF_Click_AddFillResponce(object sender, RoutedEventArgs e)
+        {
+            AddFullResponce((StackPanel)F_PollEditing.Children[2]);
+        }
+
+        //Добавление куска опроса (Вопрос, ответы)
+        private void AddFullResponce(StackPanel stackPanel)
+        {
+            //Каркас
+            var QuestionGrid = new Grid()
+            {
+                Background = new SolidColorBrush(Color.FromArgb(50, 82, 145, 82)),
+                Margin = new Thickness(8),
+                Name = "Grid_" + stackPanel.Children.Count.ToString(),
+            };
+
+            //Подсказка "Вопрос:"
+            var QuestionTextBlock = new TextBlock()
+            {
+                Text = "Вопрос:",
+                FontSize = 14,
+                Margin = new Thickness(8, 2, 0, 0),
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+
+            //Ввод вопроса
+            var QuestionTextBox = new TextBox()
+            {
+                MinWidth = 60,
+                FontSize = 14,
+                TextWrapping = new TextWrapping(),
+                Margin = new Thickness(75, 2, 128, 0),
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left,
+
+            };
+
+            //Подсказка "Ответы:"
+            var AnswerTextBlock = new TextBlock()
+            {
+                Text = "Ответы:",
+                FontSize = 14,
+                Margin = new Thickness(8, 40, 0, 0),
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
+
+            //Кнопка удаление данного вопросника
+            var ButtonDeleteThis = new Button()
+            {
+                Content = "Удалить вопрос",
+                Background = null,
+                Width = 120,
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 2, 4, 0),
+                Name = "ButtonInGrid_" + stackPanel.Children.Count.ToString(),
+            };
+            ButtonDeleteThis.Click += FF_Click_DeleteFillResponce;
+
+            //Содержит варианты ответов
+            var StackQuestionInGrid = new StackPanel()
+            {
+                Margin = new Thickness(75, 40, 4, 40),
+                Name = "StackInGrid_" + stackPanel.Children.Count.ToString(),
+                MinHeight = 26,
+            };
+
+            //Кнопка добавления варианта ответа
+            var ButtonAddQuestion = new Button()
+            {
+                Content = "Добавить",
+                Background = null,
+                Width = 120,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(4, 0, 4, 4),
+                Name = "AddButtonInGrid_" + stackPanel.Children.Count.ToString(),
+            };
+            ButtonAddQuestion.Click += FF_Click_AddResponce;
+
+            //Кнопка удаления варианта ответа
+            var ButtonDeleteQuestion = new Button()
+            {
+                Content = "Удалить",
+                Background = null,
+                Width = 120,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(128, 0, 4, 4),
+                Name = "DeleteButtonInGrid_" + stackPanel.Children.Count.ToString(),
+            };
+            ButtonDeleteQuestion.Click += FF_Click_DeleteResponce;
+
+            //Скрещивание всего ужаса
+            QuestionGrid.Children.Add(QuestionTextBlock);
+            QuestionGrid.Children.Add(QuestionTextBox);
+            QuestionGrid.Children.Add(ButtonDeleteThis);
+            QuestionGrid.Children.Add(StackQuestionInGrid);
+            QuestionGrid.Children.Add(ButtonAddQuestion);
+            QuestionGrid.Children.Add(ButtonDeleteQuestion);
+            QuestionGrid.Children.Add(AnswerTextBlock);
+
+            stackPanel.Children.Add(QuestionGrid);
+        }
+
+        //Вызов кнопкой удаления куска опроса (Вопрос с ответами)
+        private void FF_Click_DeleteFillResponce(object sender, RoutedEventArgs e)
+        {
+            ((StackPanel)F_PollEditing.Children[2]).Children.Remove((UIElement)((Button)e.OriginalSource).Parent);
         }
 
         private void F_ButtonClick_CreateNewUser(object sender, RoutedEventArgs e)
         {
             SelectGrid(Grids.AccountCreate);
+        }
+
+        private void CreatepollListToResult()
+        {
+            F_StackPanelPollListOnResult.Children.Clear();
+
+            DataView Find_Polls = UsAc.Execute($"SELECT Polls.PollTableName, Polls.Title, Polls.Description, User.FIO, Polls.DateOfCreation FROM Polls LEFT JOIN[User] ON Polls.AuthorLogin = User.Login");
+
+            if (Find_Polls.Count == 0)
+            {
+                return;
+            }
+
+            DataTable Polls = Find_Polls.Table;
+            for (int i = 0; i < Find_Polls.Count; i++)
+            {
+                var newStac = new StackPanel
+                {
+                    Margin = new Thickness(4, 4, 4, 16),
+                };
+
+                var Title = new TextBlock
+                {
+                    Text = Polls.Rows[i]["Title"].ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                };
+                newStac.Children.Add(Title);
+
+                if (Polls.Rows[i]["Description"].ToString() != "")
+                {
+                    var Description = new TextBlock
+                    {
+                        Text = Polls.Rows[i]["Description"].ToString(),
+                        Margin = new Thickness(0, 0, 0, 4),
+                    };
+                    newStac.Children.Add(Description);
+                }
+
+                if (Polls.Rows[i]["FIO"].ToString() != "")
+                {
+                    var Author = new TextBlock
+                    {
+                        Text = "Автор: " + Polls.Rows[i]["FIO"].ToString(),
+                        Margin = new Thickness(0, 0, 0, 4),
+                    };
+                    newStac.Children.Add(Author);
+                }
+
+                var Date = new TextBlock
+                {
+                    Text = "Дата создания: " + Polls.Rows[i]["DateOfCreation"].ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                };
+                newStac.Children.Add(Date);
+
+                var Gridd = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+
+                var newButton = new Button
+                {
+                    Content = "Просмотреть результаты",
+                    Margin = new Thickness(0, 4, 0, 4),
+                    Name = "_" + Polls.Rows[i]["PollTableName"].ToString(),
+                    Background = null,
+                    Width = 160,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                //newButton.Click += SelectPollToEdit;
+
+                var newButton2 = new Button
+                {
+                    Content = "Вывести результаты в Excell",
+                    Margin = new Thickness(164, 4, 0, 4),
+                    Name = "_" + Polls.Rows[i]["PollTableName"].ToString(),
+                    Background = null,
+                    Width = 160,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                //newButton2.Click += SelectPollToEdit;
+
+                Gridd.Children.Add(newButton);
+                Gridd.Children.Add(newButton2);
+
+                newStac.Children.Add(Gridd);
+
+                F_StackPanelPollListOnResult.Children.Add(newStac);
+            }
+        }
+
+        private void CreatepollListToEdit()
+        {
+            F_StackPanelPollListOnUser.Children.Clear();
+
+            DataView Find_Polls;
+            if (UserToleranceLvl == 0)
+            {
+                Find_Polls = UsAc.Execute($"SELECT Polls.PollTableName, Polls.Title, Polls.Description, User.FIO, Polls.DateOfCreation FROM Polls LEFT JOIN[User] ON Polls.AuthorLogin = User.Login");
+            }
+            else
+            {
+                Find_Polls = UsAc.Execute($@"SELECT Polls.PollTableName, Polls.Title, Polls.Description, User.FIO, Polls.DateOfCreation FROM Polls LEFT JOIN[User] ON Polls.AuthorLogin = User.Login Where Polls.AuthorLogin = ""{UserLogin}""");
+            }
+
+            if (Find_Polls.Count == 0)
+            {
+                return;
+            }
+
+            DataTable Polls = Find_Polls.Table;
+            for (int i = 0; i < Find_Polls.Count; i++)
+            {
+                var newStac = new StackPanel
+                {
+                    Margin = new Thickness(4, 4, 4, 16),
+                };
+
+                var Title = new TextBlock
+                {
+                    Text = Polls.Rows[i]["Title"].ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                };
+                newStac.Children.Add(Title);
+
+                if (Polls.Rows[i]["Description"].ToString() != "")
+                {
+                    var Description = new TextBlock
+                    {
+                        Text = Polls.Rows[i]["Description"].ToString(),
+                        Margin = new Thickness(0, 0, 0, 4),
+                    };
+                    newStac.Children.Add(Description);
+                }
+
+                if (Polls.Rows[i]["FIO"].ToString() != "")
+                {
+                    var Author = new TextBlock
+                    {
+                        Text = "Автор: " + Polls.Rows[i]["FIO"].ToString(),
+                        Margin = new Thickness(0, 0, 0, 4),
+                    };
+                    newStac.Children.Add(Author);
+                }
+
+                var Date = new TextBlock
+                {
+                    Text = "Дата создания: " + Polls.Rows[i]["DateOfCreation"].ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                };
+                newStac.Children.Add(Date);
+
+                var newButton = new Button
+                {
+                    Content = "Редактировать опрос",
+                    Margin = new Thickness(0, 4, 0, 4),
+                    Name = "_" + Polls.Rows[i]["PollTableName"].ToString(),
+                    Background = null,
+                    Width = 160,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                newButton.Click += SelectPollToEdit;
+                newStac.Children.Add(newButton);
+
+                F_StackPanelPollListOnUser.Children.Add(newStac);
+            }
+        }
+
+        private void CreatePollList()
+        {
+            DataView Find_Polls = UsAc.Execute($"SELECT Polls.PollTableName, Polls.Title, Polls.Description, User.FIO, Polls.DateOfCreation FROM Polls LEFT JOIN[User] ON Polls.AuthorLogin = User.Login Where Polls.MinUserLvl >= {UserToleranceLvl}");
+            if (Find_Polls.Count == 0)
+            {
+                MessageBox.Show("Опросов для прохождения нет");
+                SelectGrid(Grids.MainWindow);
+            }
+            DataTable Polls = Find_Polls.Table;
+
+            F_StackPanelPollList.Children.Clear();
+            for (int i = 0; i < Find_Polls.Count; i++)
+            {
+                var newStac = new StackPanel
+                {
+                    Margin = new Thickness(4, 4, 4, 16),
+                };
+
+                var Title = new TextBlock
+                {
+                    Text = Polls.Rows[i]["Title"].ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                };
+                newStac.Children.Add(Title);
+
+                if (Polls.Rows[i]["Description"].ToString() != "")
+                {
+                    var Description = new TextBlock
+                    {
+                        Text = Polls.Rows[i]["Description"].ToString(),
+                        Margin = new Thickness(0, 0, 0, 4),
+                    };
+                    newStac.Children.Add(Description);
+                }
+
+                if (Polls.Rows[i]["FIO"].ToString() != "")
+                {
+                    var Author = new TextBlock
+                    {
+                        Text = "Автор: " + Polls.Rows[i]["FIO"].ToString(),
+                        Margin = new Thickness(0, 0, 0, 4),
+                    };
+                    newStac.Children.Add(Author);
+                }
+
+                var Date = new TextBlock
+                {
+                    Text = "Дата создания: " + Polls.Rows[i]["DateOfCreation"].ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                };
+                newStac.Children.Add(Date);
+
+                var newButton = new Button
+                {
+                    Content = "Пройти опрос",
+                    Margin = new Thickness(0, 4, 0, 4),
+                    Name = "_" + Polls.Rows[i]["PollTableName"].ToString(),
+                    Background = null,
+                    Width = 160,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                newButton.Click += SelectPoll;
+                newStac.Children.Add(newButton);
+
+                F_StackPanelPollList.Children.Add(newStac);
+            }
         }
 
         private void F_Button_ClickToEnter(object sender, RoutedEventArgs e)
@@ -746,7 +1473,7 @@ namespace GraduationProject
         private void F_ButtonLogOut_Click(object sender, RoutedEventArgs e)
         {
             AutorizationUser(null);
-            SelectGrid(Grids.MainWindow);
+            SelectGrid(Grids.Authorization);
         }
 
         private void F_ButtonChangePassword_Click(object sender, RoutedEventArgs e)
@@ -863,6 +1590,12 @@ namespace GraduationProject
             }
         }
 
+        private void F_CreateNewPoll(object sender, RoutedEventArgs e)
+        {
+            EditPoll(null);
+            SelectGrid(Grids.PollEditing);
+        }
+
         private void F_Account_GoToMainWindow_Click(object sender, RoutedEventArgs e)
         {
             SelectGrid(Grids.MainWindow);
@@ -870,6 +1603,11 @@ namespace GraduationProject
 
         private void F_Account_SaveButton_Click(object sender, RoutedEventArgs e)
         {
+            if (UserFio == F_Account_FIO.Text)
+            {
+                return;
+            }
+
             try
             {
                 UsAc.ExecuteNonQuery($@"UPDATE [User] SET [User].FIO = ""{F_Account_FIO.Text}"" WHERE [User].Login = ""{F_Account_Login.Text}""");

@@ -25,13 +25,14 @@
         <!-- Панель содержания -->
         <Grid Margin="0,64,0,0">
             <!-- Главное окно -->
-            <Grid Visibility="Hidden" x:Name="F_MainWindow" d:IsHidden="True">
+            <StackPanel Visibility="Hidden" x:Name="F_MainWindow" d:IsHidden="True" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <!-- Выбор действий -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" >
-                    <Button Background="{x:Null}" Content=" Создать опрос " Click="Button_Click_CreatePoll"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,8">
+                    <Button Background="{x:Null}" Content=" Управление опросами " Click="Button_Click_CreatePoll"/>
                     <Button Background="{x:Null}" Content=" Пройти опрос " Click="Button_Click_PassPoll" Margin="8,0,0,0"/>
                 </StackPanel>
-            </Grid>
+                <Button Background="{x:Null}" Content=" Просмотр результатов опросов " Width="236" Click="Button_Click_PassResult"/>
+            </StackPanel>
 
             <!-- Авторизация -->
             <Grid Visibility="Hidden" x:Name="F_Authorization">
@@ -82,7 +83,60 @@
                 <Button x:Name="F_Account_LogOut" Content="Выйти из аккаунта" VerticalAlignment="Top" HorizontalAlignment="Left" Width="160" Margin="308,254,0,0" Background="{x:Null}" Click="F_ButtonLogOut_Click"/>
             </Grid>
 
-            <Grid x:Name="Core" d:IsHidden="True"></Grid>
+            <!-- Выбор опроса -->
+            <Grid x:Name="F_PollList" Visibility="Hidden">
+                <ScrollViewer Padding="0,32,0,0">
+                    <StackPanel x:Name="F_StackPanelPollList" Margin="0,0,8,0" Background="#3FEAF1E9">
+
+                    </StackPanel>
+                </ScrollViewer>
+                <Button Content="Вернуться назад" VerticalAlignment="Top" HorizontalAlignment="Left" Width="320" Margin="4,4,0,0" Background="{x:Null}" Click="F_Account_GoToMainWindow_Click"/>
+            </Grid>
+
+            <!-- Обзор опросов для редактирования -->
+            <Grid x:Name="F_PollEditMainMenu">
+                <Grid Margin="4,0,0,0">
+                    <TextBlock Text="Доступные опросы для редактирования" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8,34,0,0" FontSize="16" FontWeight="Bold" Foreground="#FF0A6A00"/>
+                    <Rectangle VerticalAlignment="Top" Margin="8,56,16,4" Height="1" Fill="#2F0A6A00"/>
+                    <ScrollViewer Padding="0,57,0,0">
+                        <StackPanel x:Name="F_StackPanelPollListOnUser" Background="#1F529152">
+
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Button Content="Создать новый опрос" Height="22" Width="240" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Null}" Margin="4,4,0,16" Click="F_CreateNewPoll"/>
+                    <Button Content="Вернуться назад" Height="22" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Null}" Margin="248,4,0,0" Click="F_Account_GoToMainWindow_Click"/>
+                </Grid>
+            </Grid>
+
+            <!-- Редактировние опроса -->
+            <Grid x:Name="F_PollEdit">
+                <ScrollViewer Padding="4,34,0,0">
+                    <StackPanel x:Name="F_PollEditing">
+
+                    </StackPanel>
+                </ScrollViewer>
+                <Button Content="Сохранить" Height="22" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Null}" Margin="4,4,0,0" Click="Button_Click_SavePoll"/>
+                <Button Content="Вернуться назад" Height="22" Width="120" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Null}" Margin="128,4,0,0" Click="Button_Click_CreatePoll"/>
+            </Grid>
+
+            <!-- Список опросов, чьи результаты можно глянуть -->
+            <Grid x:Name="F_PollListResult">
+                <Grid Margin="4,0,0,0">
+                    <TextBlock Text="Доступные опросы для просмотра" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="8,34,0,0" FontSize="16" FontWeight="Bold" Foreground="#FF0A6A00"/>
+                    <Rectangle VerticalAlignment="Top" Margin="8,56,16,4" Height="1" Fill="#2F0A6A00"/>
+                    <ScrollViewer Padding="0,57,0,0">
+                        <StackPanel x:Name="F_StackPanelPollListOnResult" Background="#1F529152">
+
+                        </StackPanel>
+                    </ScrollViewer>
+                    <Button Content="Вернуться назад" Height="22" Width="320" HorizontalAlignment="Left" VerticalAlignment="Top" Background="{x:Null}" Margin="4,4,0,0" Click="F_Account_GoToMainWindow_Click"/>
+                </Grid>
+            </Grid>
+            
+            <!-- Опрос -->
+            <Grid x:Name="Core" d:IsHidden="True">
+                
+            </Grid>
         </Grid>
     </Grid>
 </Window>
