@@ -140,7 +140,7 @@ namespace GraduationProject
                     }
                 }
             }
-            
+
 
             if (GoNext)
             {
@@ -158,7 +158,7 @@ namespace GraduationProject
                     Core.Children.Clear();
                     MessageBox.Show("Вы ответили на все вопросы в анкете");
 
-                    UsAc.ExecuteNonQuery($@"INSERT INTO Result (PollTableName, Result) VALUES (""{PollSelectedToPoling}"", ""{QTM.QuestionListResultToString(QuestionList)}"")");
+                    UsAc.ExecuteNonQuery($@"INSERT INTO Result (PollTableName, Result, DateOfPassage) VALUES (""{PollSelectedToPoling}"", ""{QTM.QuestionListResultToString(QuestionList)}"", NOW())");
 
                     SelectGrid(Grids.MainWindow);
                     return;
@@ -336,7 +336,7 @@ namespace GraduationProject
                                 catch (Exception ex) { MessageBox.Show(ex.ToString()); };
                                 try
                                 {
-                                    UsAc.ExecuteNonQuery($"Create Table Result (PollTableName string NULL, Result MEMO NULL)");
+                                    UsAc.ExecuteNonQuery($"Create Table Result (PollTableName string NULL, Result MEMO NULL, DateOfPassage DateTime)");
                                 }
                                 catch (Exception ex) { MessageBox.Show(ex.ToString()); };
                                 try
@@ -505,6 +505,7 @@ namespace GraduationProject
             //MessageBox.Show("527", tableName);
             var table = UsAc.Execute($@"SELECT * FROM Polls Where PollTableName = ""{tableName}""");
 
+            F_ButtonDeletePoll.IsEnabled = true;
 
             EditPoll(table);
             SelectGrid(Grids.PollEditing);
@@ -994,32 +995,68 @@ namespace GraduationProject
                 PollTableName = PollSelectedToEdit;
             }
 
+            string Title = ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[2]).Children[1]).Text;
+
+            if (Title.Length < 4)
+            {
+                MessageBox.Show("Текущее название опроса слишком короткое");
+                return;
+            }
+
             List<Question> QuestionList = new List<Question>();
             //Создание массива с вопросами
             {
                 int QuestCount = ((StackPanel)F_PollEditing.Children[2]).Children.Count - 2;
 
+                if (QuestCount == 0)
+                {
+                    MessageBox.Show("Нельзя сохранить опрос, в котором нет вопросов");
+                    return;
+                }
+
                 for (int i = 0; i < QuestCount; i++)
                 {
+                    bool SuccessAdd = true;
                     var Quest = (Grid)((StackPanel)F_PollEditing.Children[2]).Children[i + 2];
 
                     string QuestText = ((TextBox)Quest.Children[1]).Text;
+
+                    if (QuestText.Length < 4)
+                        if (MessageBox.Show("В одном из блоков опроса отсуствует вопрос, пропустить его и продолжить?", "Отсуствие текста вопроса", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+                            continue;
+                        else
+                            return;
+
+
                     int AnswerCount = (((StackPanel)Quest.Children[3]).Children.Count);
+
+                    if (AnswerCount < 2)
+                        if (MessageBox.Show($@"Для вопроса ""{QuestText}"" указано мало ответов (меньше 2), пропустить его и продолжить?", "Отсуствие вариантов ответа", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+                            continue;
+                        else
+                            return;
 
                     var AnswerList = new List<string>();
                     for (int z = 0; z < AnswerCount; z++)
                     {
-                        AnswerList.Add(((TextBox)((StackPanel)Quest.Children[3]).Children[z]).Text);
+                        string answer = ((TextBox)((StackPanel)Quest.Children[3]).Children[z]).Text;
+                        if (answer.Length == 0)
+                            if (MessageBox.Show($@"Для вопроса ""{QuestText}"" один из ответов пустой, пропустить его и продолжить?", "Пустой вариант ответа", MessageBoxButton.YesNo, MessageBoxImage.Exclamation) == MessageBoxResult.Yes)
+                                SuccessAdd = false;
+                            else
+                                return;
+
+                        AnswerList.Add(answer);
                     }
 
-                    QuestionList.Add(new Question(QuestText, AnswerList));
+                    if (SuccessAdd)
+                        QuestionList.Add(new Question(QuestText, AnswerList));
                 }
             }
 
             //Перегонка массива в текст
             string QuestionListOnString = QTM.QuestionListToString(QuestionList);
 
-            string Title = ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[2]).Children[1]).Text;
             string Description = ((TextBox)((Grid)((StackPanel)F_PollEditing.Children[0]).Children[3]).Children[1]).Text;
             int MinUserLvl = 2;
             if ((bool)((CheckBox)((StackPanel)F_PollEditing.Children[0]).Children[4]).IsChecked)
@@ -1076,9 +1113,17 @@ namespace GraduationProject
             //Каркас
             var QuestionGrid = new Grid()
             {
-                Background = new SolidColorBrush(Color.FromArgb(50, 82, 145, 82)),
+                //Background = new SolidColorBrush(Color.FromArgb(50, 82, 145, 82)),
                 Margin = new Thickness(8),
                 Name = "Grid_" + stackPanel.Children.Count.ToString(),
+            };
+
+            //Задний фон
+            var BackRectangle = new Rectangle()
+            {
+                Stroke = Brushes.Black,
+                RadiusY = 4,
+                RadiusX = 4,
             };
 
             //Подсказка "Вопрос:"
@@ -1096,11 +1141,9 @@ namespace GraduationProject
             {
                 MinWidth = 60,
                 FontSize = 14,
-                TextWrapping = new TextWrapping(),
                 Margin = new Thickness(75, 2, 128, 0),
                 VerticalAlignment = VerticalAlignment.Top,
                 HorizontalAlignment = HorizontalAlignment.Left,
-
             };
 
             //Подсказка "Ответы:"
@@ -1121,7 +1164,7 @@ namespace GraduationProject
                 Width = 120,
                 VerticalAlignment = VerticalAlignment.Top,
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 2, 4, 0),
+                Margin = new Thickness(0, 2, 2, 0),
                 Name = "ButtonInGrid_" + stackPanel.Children.Count.ToString(),
             };
             ButtonDeleteThis.Click += FF_Click_DeleteFillResponce;
@@ -1168,6 +1211,7 @@ namespace GraduationProject
             QuestionGrid.Children.Add(ButtonAddQuestion);
             QuestionGrid.Children.Add(ButtonDeleteQuestion);
             QuestionGrid.Children.Add(AnswerTextBlock);
+            QuestionGrid.Children.Add(BackRectangle);
 
             stackPanel.Children.Add(QuestionGrid);
         }
@@ -1263,7 +1307,7 @@ namespace GraduationProject
                     Width = 160,
                     HorizontalAlignment = HorizontalAlignment.Left,
                 };
-                //newButton2.Click += SelectPollToEdit;
+                newButton2.Click += ResultOutToExcell;
 
                 Gridd.Children.Add(newButton);
                 Gridd.Children.Add(newButton2);
@@ -1272,6 +1316,95 @@ namespace GraduationProject
 
                 F_StackPanelPollListOnResult.Children.Add(newStac);
             }
+        }
+
+        private void ResultOutToExcell(object sender, RoutedEventArgs e)
+        {
+            //Получение имени опроса для Excell
+            string Title = ((TextBlock)((StackPanel)((Grid)((Button)e.OriginalSource).Parent).Parent).Children[0]).Text;
+
+            //Получение кодового имени таблицы
+            string tableName = ((Button)e.OriginalSource).Name.ToString().Substring(1);
+
+            //Получение содержимого опроса из таблицы
+            string STRINGQUESTION = UsAc.Execute($@"Select CODE from Polls where PollTableName = ""{tableName}""").Table.Rows[0]["CODE"].ToString();
+            List<Question> QuestionList = QTM.StringToQuestionList(STRINGQUESTION);
+
+            //Получение списка результатов
+            var tableOfResult = UsAc.Execute($@"SELECT DateOfPassage, Result FROM Result Where PollTableName = ""{tableName}""");
+            var tableResult = tableOfResult.Table;
+
+            //Получение заголовков
+            List<string> QuestionText = new List<string>();
+            QuestionText.Add("Отметка времени");
+            foreach (Question ans in QuestionList)
+            {
+                bool ShowError = true;
+                try
+                {
+                    QuestionText.Add(ans.QuestionText);
+                }
+                catch (Exception ex)
+                {
+                    if (ShowError)
+                        MessageBox.Show("Ошибка, некоторые результаты не сходятся с опросом \n\r\n\r" + ex.ToString(), "Ошибка");
+
+                    ShowError = false;
+                    continue;
+                }
+
+            }
+            var Excell = new CourseProject.Modules.ExcellOut(Title, QuestionText);
+
+            for (int i = 0; i < tableOfResult.Count; i++)
+            {
+                List<string> AnswerText = new List<string>();
+                AnswerText.Add(tableResult.Rows[i]["DateOfPassage"].ToString());
+                List<Question> AnswerTextList;
+                try
+                {
+                    AnswerTextList = QTM.StringResultToResultToQuestionList(QuestionList, tableOfResult.Table.Rows[i]["Result"].ToString());
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString(), "Критическая ошибка");
+                    if (UserToleranceLvl < 2)
+                    {
+                        if (MessageBox.Show("Ошибка просмотра результатов. Для исправления данной ошибки рекомендуется удалить все прошлые результаты по данному опросу, сделать это?", "Ошибка вывода результатов", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
+                        {
+                            UsAc.ExecuteNonQuery($@"DELETE FROM Result Where PollTableName = ""{tableName}""");
+                        }
+                        return;
+                    }
+                    return;
+                }
+                foreach (Question aquest in AnswerTextList)
+                {
+                    bool ShowError = true;
+                    try
+                    {
+                        AnswerText.Add(aquest.selectAnswerText);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ShowError)
+                            MessageBox.Show("Ошибка, некоторые результаты не сходятся с опросом \n\r\n\r" + ex.ToString(), "Ошибка");
+
+                        ShowError = false;
+                        continue;
+                    }
+                }
+                Excell.AddLine(AnswerText);
+            }
+            try
+            {
+                Excell.OutToExcell();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString(), "Ошибка вывода результатов в Excell");
+            }
+
         }
 
         private void CreatepollListToEdit()
@@ -1590,10 +1723,23 @@ namespace GraduationProject
             }
         }
 
+        private void Button_Click_DeletePoll(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("Вы действительно хотите удалить данный опрос? (Вместе с ним удаляться и результаты)", "Удаление опроса", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                UsAc.ExecuteNonQuery($@"DELETE FROM Polls Where PollTableName = ""{PollSelectedToEdit}""");
+                UsAc.ExecuteNonQuery($@"DELETE FROM Result Where PollTableName = ""{PollSelectedToEdit}""");
+
+                SelectGrid(Grids.PollEditMenu);
+            }
+        }
+
         private void F_CreateNewPoll(object sender, RoutedEventArgs e)
         {
             EditPoll(null);
             SelectGrid(Grids.PollEditing);
+
+            F_ButtonDeletePoll.IsEnabled = false;
         }
 
         private void F_Account_GoToMainWindow_Click(object sender, RoutedEventArgs e)

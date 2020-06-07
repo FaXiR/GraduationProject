@@ -51,7 +51,6 @@ namespace GraduationProject.Modules.Question
             return result;
         }
 
-
         public List<Question> StringToQuestionList(string QuestionString)
         {
             string[] QB = new string[] { QuestionBreak };

@@ -18,6 +18,21 @@ namespace GraduationProject.Modules.Question
         /// </summary>
         public int selectAnswer { get; set; } = -1;
 
+        public string selectAnswerText
+        {
+            get
+            {
+                if (selectAnswer == -1)
+                {
+                    return null;
+                }
+                else
+                {
+                    return AnswerList[selectAnswer].Text;
+                }
+            }
+        }
+
         /// <summary>
         /// Вопросительное предложение
         /// </summary>
