@@ -37,6 +37,7 @@ namespace GraduationProject
             PollEditMenu,
             PollEditing,
             PollResultList,
+            PollResult,
         }
 
         /// <summary>
@@ -113,14 +114,19 @@ namespace GraduationProject
             }
         }
 
-        private void StartPoling(List<Modules.Question.Question> questList, Grid grid, bool RandomAnswerPosition)
+        private void StartPoling(List<Modules.Question.Question> questList, Grid grid)
         {
             QuestionIndex = 0;
             QuestionList = questList;
-            QuestionBuilder(questList[0], grid, RandomAnswerPosition, null);
+            QuestionBuilder(questList[0], grid, null);
         }
 
         private void NextQuestion_Click(object sender, RoutedEventArgs e)
+        {
+            NextQuestion();
+        }
+
+        private void NextQuestion()
         {
             bool GoNext = false;
             string Select = null;
@@ -140,7 +146,6 @@ namespace GraduationProject
                     }
                 }
             }
-
 
             if (GoNext)
             {
@@ -164,11 +169,11 @@ namespace GraduationProject
                     return;
                 }
 
-                QuestionBuilder(QuestionList[QuestionIndex], Core, false, ButtonContent);
+                QuestionBuilder(QuestionList[QuestionIndex], Core, ButtonContent);
             }
         }
 
-        private void QuestionBuilder(Modules.Question.Question question, Grid grid, bool randomPosition, string ButtonContent)
+        private void QuestionBuilder(Modules.Question.Question question, Grid grid, string ButtonContent)
         {
             grid.Children.Clear();
 
@@ -191,52 +196,29 @@ namespace GraduationProject
                 Text = question.QuestionText,
                 Margin = new Thickness(0, 0, 0, 8),
                 TextWrapping = new TextWrapping(),
+                FontSize = 18,
             };
             WrPanel.Children.Add(TxBlock);
 
 
-            //Выбор расположения ответов
-            if (randomPosition)
+            //Создание вариантов ответа
+            int AnswerIndex = 0;
+            foreach (Modules.Question.Answer answer in question.AnswerList)
             {
-                Random rand = new Random();
-                List<int> BusyIndexList = new List<int>();
-                while (BusyIndexList.Count < question.AnswerList.Count)
+                var RadButton = new RadioButton
                 {
-                    int newIndex = rand.Next(0, question.AnswerList.Count);
-                    if (BusyIndexList.IndexOf(newIndex) != -1)
-                        continue;
+                    Name = "a" + AnswerIndex.ToString(),
+                    IsChecked = false,
+                    FontSize = 16,
+                    Content = answer.Text,
+                    Margin = marg,
+                };
+                AnswerIndex++;
 
-                    var RadButton = new RadioButton
-                    {
-                        Name = "a" + newIndex.ToString(),
-                        IsChecked = false,
-                        Content = question.AnswerList[newIndex].Text,
-                        Margin = marg,
-                    };
-                    BusyIndexList.Add(newIndex);
-                    WrPanel.Children.Add(RadButton);
-                    RadioButtonAnswerList.Add(RadButton);
-                }
+                WrPanel.Children.Add(RadButton);
+                RadioButtonAnswerList.Add(RadButton);
             }
-            else
-            {
-                //Создание вариантов ответа
-                int AnswerIndex = 0;
-                foreach (Modules.Question.Answer answer in question.AnswerList)
-                {
-                    var RadButton = new RadioButton
-                    {
-                        Name = "a" + AnswerIndex.ToString(),
-                        IsChecked = false,
-                        Content = answer.Text,
-                        Margin = marg,
-                    };
-                    AnswerIndex++;
 
-                    WrPanel.Children.Add(RadButton);
-                    RadioButtonAnswerList.Add(RadButton);
-                }
-            }
 
             //Создание кнопки "далее"
             if (ButtonContent == null)
@@ -252,6 +234,17 @@ namespace GraduationProject
             };
             Butto.Click += NextQuestion_Click;
             WrPanel.Children.Add(Butto);
+
+            var helped = new TextBlock
+            {
+                Text = "Либо используйте Enter",
+                FontSize = 10,
+                Foreground = Brushes.Gray,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 0, 6, 0),
+            };
+
+            WrPanel.Children.Add(helped);
 
             grid.Children.Add(WrPanel);
         }
@@ -273,7 +266,7 @@ namespace GraduationProject
                 {
                     try
                     {
-                        File.Delete(Environment.CurrentDirectory + Key.settingsFileName);
+                        File.Delete(Environment.CurrentDirectory + "\\" + Key.settingsFileName);
                     }
                     catch (Exception ex2)
                     {
@@ -302,7 +295,7 @@ namespace GraduationProject
                         dbPath = dialog.FileName;
 
                         //Сохранение пути в файле
-                        File.WriteAllText(Environment.CurrentDirectory + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
+                        File.WriteAllText(Environment.CurrentDirectory + "\\" + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
                     }
                     catch (Exception ex)
                     {
@@ -348,7 +341,7 @@ namespace GraduationProject
                                 UsAc.ConnectClose();
 
                                 //Сохранение пути в файле
-                                File.WriteAllText(Environment.CurrentDirectory + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
+                                File.WriteAllText(Environment.CurrentDirectory + "\\" + Key.settingsFileName, Encrypt.Shifrovka(dialog.FileName, Key.encryptionKeyInFile));
 
                                 //Создание учетной записи
                                 SelectGrid(Grids.AccountCreate);
@@ -375,7 +368,7 @@ namespace GraduationProject
                 if (!CheckDB(dbPath))
                 {
                     MessageBox.Show("Используемый файл базы данных не имеет корректных данных для работы с приложением. Перезапустите приложение, чтобы указать новый путь.");
-                    File.Delete(Environment.CurrentDirectory + Key.settingsFileName);
+                    File.Delete(Environment.CurrentDirectory + "\\" + Key.settingsFileName);
                     Environment.Exit(0);
                 }
                 else if (UsAc.Execute("SELECT * FROM [User]").Count == 0)
@@ -491,7 +484,7 @@ namespace GraduationProject
             string QuestionSTRING = UsAc.Execute($@"SELECT CODE From Polls where PollTableName = ""{tableName}""").Table.Rows[0]["CODE"].ToString();
             var z = QTM.StringToQuestionList(QuestionSTRING);
 
-            StartPoling(z, Core, false);
+            StartPoling(z, Core);
 
             SelectGrid(Grids.PollPass);
 
@@ -502,7 +495,6 @@ namespace GraduationProject
         {
             string s = ((Button)e.OriginalSource).Name.ToString();
             string tableName = s.Substring(1);
-            //MessageBox.Show("527", tableName);
             var table = UsAc.Execute($@"SELECT * FROM Polls Where PollTableName = ""{tableName}""");
 
             F_ButtonDeletePoll.IsEnabled = true;
@@ -513,6 +505,11 @@ namespace GraduationProject
 
         private void Button_Click_CreatePoll(object sender, RoutedEventArgs e)
         {
+            if (UserAuthrorization)
+            {
+                AutorizationUser(UserLogin);
+            }
+
             if (UserToleranceLvl >= 2)
             {
                 MessageBox.Show("Данная возможность доступна только для сотрдуников");
@@ -524,6 +521,17 @@ namespace GraduationProject
 
         private void Button_Click_PassResult(object sender, RoutedEventArgs e)
         {
+            if (UserAuthrorization)
+            {
+                AutorizationUser(UserLogin);
+            }
+
+            if (UserToleranceLvl >= 2)
+            {
+                MessageBox.Show("Данная возможность доступна только для сотрдуников");
+                return;
+            }
+
             SelectGrid(Grids.PollResultList);
         }
 
@@ -590,7 +598,7 @@ namespace GraduationProject
 
             if (CheckLogPas())
             {
-                StreamWriter str = new StreamWriter(Environment.CurrentDirectory + Key.settingsFileName);
+                StreamWriter str = new StreamWriter(Environment.CurrentDirectory + "\\" + Key.settingsFileName);
                 str.WriteLine(Encrypt.Shifrovka(dbPath, Key.encryptionKeyInFile));
                 str.WriteLine(F_Login.Text);
                 str.Close();
@@ -643,6 +651,7 @@ namespace GraduationProject
         {
             F_StackPanelPollList.Children.Clear();
             F_StackPanelPollListOnUser.Children.Clear();
+            F_ResultList.Children.Clear();
 
             F_MainWindow.Visibility = Visibility.Hidden;
             F_Authorization.Visibility = Visibility.Hidden;
@@ -652,6 +661,7 @@ namespace GraduationProject
             F_PollEdit.Visibility = Visibility.Hidden;
             Core.Visibility = Visibility.Hidden;
             F_PollListResult.Visibility = Visibility.Hidden;
+            F_PollResult.Visibility = Visibility.Hidden;
 
             PollSelectedToPoling = null;
 
@@ -733,6 +743,11 @@ namespace GraduationProject
                     CreatepollListToResult();
                     F_LargeText.Text = "Просмотр результатов";
                     F_PollListResult.Visibility = Visibility.Visible;
+                    break;
+
+                case Grids.PollResult:
+                    F_LargeText.Text = "Результаты опроса";
+                    F_PollResult.Visibility = Visibility.Visible;
                     break;
             }
         }
@@ -1282,6 +1297,16 @@ namespace GraduationProject
                 };
                 newStac.Children.Add(Date);
 
+                //Чилсо опрошенных
+                int CountForPoll = Convert.ToInt32(UsAc.Execute($@"SELECT Count(Result.PollTableName) AS [Count] FROM Result Where Result.PollTableName = ""{Polls.Rows[i]["PollTableName"].ToString()}""").Table.Rows[0]["Count"].ToString());
+                var CountForPollShow = new TextBlock
+                {
+                    Text = "Число опрошенных: " + CountForPoll.ToString(),
+                    Margin = new Thickness(0, 0, 0, 4),
+                };
+                newStac.Children.Add(CountForPollShow);
+
+
                 var Gridd = new Grid
                 {
                     HorizontalAlignment = HorizontalAlignment.Left,
@@ -1296,7 +1321,7 @@ namespace GraduationProject
                     Width = 160,
                     HorizontalAlignment = HorizontalAlignment.Left,
                 };
-                //newButton.Click += SelectPollToEdit;
+                newButton.Click += SelectPollToShowResult;
 
                 var newButton2 = new Button
                 {
@@ -1315,6 +1340,188 @@ namespace GraduationProject
                 newStac.Children.Add(Gridd);
 
                 F_StackPanelPollListOnResult.Children.Add(newStac);
+            }
+        }
+
+        private void SelectPollToShowResult(object sender, RoutedEventArgs e)
+        {
+            //Получение имени опроса
+            string Title = ((TextBlock)((StackPanel)((Grid)((Button)e.OriginalSource).Parent).Parent).Children[0]).Text;
+
+            //Получение кодового имени таблицы
+            string tableName = ((Button)e.OriginalSource).Name.ToString().Substring(1);
+
+            //Получение содержимого опроса из таблицы
+            string STRINGQUESTION = UsAc.Execute($@"Select CODE from Polls where PollTableName = ""{tableName}""").Table.Rows[0]["CODE"].ToString();
+            List<Question> QuestionList = QTM.StringToQuestionList(STRINGQUESTION);
+
+            //Получение списка результатов
+            var tableOfResult = UsAc.Execute($@"SELECT DateOfPassage, Result FROM Result Where PollTableName = ""{tableName}""");
+
+            //Получение заголовков
+            List<string> QuestionText = new List<string>();
+            foreach (Question ans in QuestionList)
+            {
+                bool ShowError = true;
+                try
+                {
+                    QuestionText.Add(ans.QuestionText);
+                }
+                catch (Exception ex)
+                {
+                    if (ShowError)
+                        MessageBox.Show("Ошибка, некоторые результаты не сходятся с опросом \n\r\n\r" + ex.ToString(), "Ошибка");
+
+                    ShowError = false;
+                    continue;
+                }
+            }
+            //Title
+            //QuestionText
+            List<List<string>> ColumnResults = new List<List<string>>();
+
+            for (int i = 0; i < tableOfResult.Count; i++)
+            {
+                List<string> AnswerText = new List<string>();
+                List<Question> AnswerTextList;
+                try
+                {
+                    AnswerTextList = QTM.StringResultToResultToQuestionList(QuestionList, tableOfResult.Table.Rows[i]["Result"].ToString());
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.ToString(), "Критическая ошибка");
+                    if (UserToleranceLvl < 2)
+                    {
+                        if (MessageBox.Show("Ошибка просмотра результатов. Для исправления данной ошибки рекомендуется удалить все прошлые результаты по данному опросу, сделать это?", "Ошибка вывода результатов", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
+                        {
+                            UsAc.ExecuteNonQuery($@"DELETE FROM Result Where PollTableName = ""{tableName}""");
+                        }
+                        return;
+                    }
+                    return;
+                }
+                foreach (Question aquest in AnswerTextList)
+                {
+                    bool ShowError = true;
+                    try
+                    {
+                        AnswerText.Add(aquest.selectAnswerText);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ShowError)
+                            MessageBox.Show("Ошибка, некоторые результаты не сходятся с опросом \n\r\n\r" + ex.ToString(), "Ошибка");
+
+                        ShowError = false;
+                        continue;
+                    }
+                }
+                ColumnResults.Add(AnswerText);
+            }
+
+            //Title
+            //QuestionText
+            //ColumnResults
+
+            SelectGrid(Grids.PollResult);
+
+            //Добавление целого блока
+            for (int i = 0; i < QuestionText.Count; i++)
+            {
+                //Каркас + задник
+                var BlockGrid = new Grid()
+                {
+                    Margin = new Thickness(4, 0, 4, 8),
+                };
+
+                var BackRectangle = new Rectangle()
+                {
+                    Stroke = Brushes.Black,
+                    RadiusY = 4,
+                    RadiusX = 4,
+                };
+                BlockGrid.Children.Add(BackRectangle);
+
+                //БлокСодержимого
+                var BlockStackPanel = new StackPanel();
+
+                //Текст вопроса
+                var QuestionTextBlock = new TextBlock()
+                {
+                    Text = QuestionText[i],
+                    FontSize = 16,
+                    Margin = new Thickness(4,0,0,0),
+                };
+                BlockStackPanel.Children.Add(QuestionTextBlock);
+
+                //Перебор каждого варианта ответа 
+                foreach (Answer answer in QuestionList[i].AnswerList)
+                {
+                    int count = 0;
+                    //Подсчет того, сколько ответов данного типа есть
+                    {
+                        for (int z = 0; z < ColumnResults.Count; z++)
+                        {
+                            if (answer.Text == ColumnResults[z][i])
+                                count++;
+                        }
+                    }
+
+                    var ResultGrid = new Grid() { Margin = new Thickness(3, 0, 3, 4)};
+                    if (count == 0)
+                    {
+                        ResultGrid.Children.Add(new Rectangle { Fill = Brushes.LightSlateGray, Height = 16, RadiusY = 2, RadiusX = 2 });
+
+                        var AnswerTextBlockCount = new TextBlock { Text = count.ToString() + " - 0%   " + answer.Text, Margin = new Thickness(4, 0, 0, 0) };
+                        Grid.SetColumnSpan(AnswerTextBlockCount, 2);
+
+                        ResultGrid.Children.Add(AnswerTextBlockCount);
+                    }
+                    if (count == ColumnResults.Count)
+                    {
+                        ResultGrid.Children.Add(new Rectangle { Fill = Brushes.LightGreen, Height = 16, RadiusY = 2, RadiusX = 2 });
+
+                        var AnswerTextBlockCount = new TextBlock {  Text = count.ToString() + " - 100%   " + answer.Text, Margin = new Thickness(4, 0, 0, 0) };
+                        Grid.SetColumnSpan(AnswerTextBlockCount, 2);
+
+                        ResultGrid.Children.Add(AnswerTextBlockCount);
+                    }
+                    else
+                    {
+                        double ValueOfFill = (double)count / (double)ColumnResults.Count;
+                        double ValueOfNull = (double)1 - ValueOfFill;
+
+                        ColumnDefinition rowOfFill = new ColumnDefinition()
+                        {
+                            Width = new GridLength(ValueOfFill, GridUnitType.Star)
+                        };
+
+                        ColumnDefinition rowOfNull = new ColumnDefinition()
+                        {
+                            Width = new GridLength(ValueOfNull, GridUnitType.Star)
+                        };
+
+                        ResultGrid.ColumnDefinitions.Add(rowOfFill);
+                        ResultGrid.ColumnDefinitions.Add(rowOfNull);
+
+                        var GoodRect = new Rectangle { Fill = Brushes.LightGreen, Height = 16, RadiusY = 2, RadiusX = 2 };
+                        var BadRect = new Rectangle { Fill = Brushes.LightSlateGray, Height = 16, RadiusY = 2, RadiusX = 2 };
+                        Grid.SetColumn(GoodRect, 0);
+                        ResultGrid.Children.Add(GoodRect);
+
+                        Grid.SetColumn(BadRect, 1);
+                        ResultGrid.Children.Add(BadRect);
+
+                        var AnswerTextBlockCount = new TextBlock { Text = count.ToString() + " - " + ((int)(ValueOfFill * 100)).ToString() + "%   " + answer.Text, Margin = new Thickness(4, 0, 0, 0) };
+                        Grid.SetColumnSpan(AnswerTextBlockCount, 2);
+
+                        ResultGrid.Children.Add(AnswerTextBlockCount);
+                    }
+                    BlockStackPanel.Children.Add(ResultGrid);
+                }
+                BlockGrid.Children.Add(BlockStackPanel);
+                F_ResultList.Children.Add(BlockGrid);
             }
         }
 
@@ -1763,6 +1970,17 @@ namespace GraduationProject
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString(), "Ошибка изменения ФИО");
+            }
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (Core.Visibility == Visibility.Visible)
+            {
+                if (e.Key == System.Windows.Input.Key.Enter)
+                {
+                    NextQuestion();
+                }
             }
         }
     }
