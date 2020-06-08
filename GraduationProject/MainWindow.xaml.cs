@@ -512,7 +512,7 @@ namespace GraduationProject
 
             if (UserToleranceLvl >= 2)
             {
-                MessageBox.Show("Данная возможность доступна только для сотрдуников");
+                MessageBox.Show("Данная возможность доступна только для сотрудников");
                 return;
             }
 
@@ -528,7 +528,7 @@ namespace GraduationProject
 
             if (UserToleranceLvl >= 2)
             {
-                MessageBox.Show("Данная возможность доступна только для сотрдуников");
+                MessageBox.Show("Данная возможность доступна только для сотрудников");
                 return;
             }
 
@@ -552,6 +552,13 @@ namespace GraduationProject
 
         private void F_RectangleOnUser_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (Core.Visibility == Visibility.Visible)
+            {
+                return;
+            }
+
+
+
             if (UserAuthrorization == false)
                 SelectGrid(Grids.Authorization);
             else
@@ -891,7 +898,7 @@ namespace GraduationProject
 
                 var RadioBittonpollForEmployee = new CheckBox()
                 {
-                    Content = "Опрос доступен только для зарегистрированных сотрдуников",
+                    Content = "Опрос доступен только для зарегистрированных сотрудников",
                 };
 
                 InfoOfPollStackPanel.Children.Add(RadioBittonpollForEmployee);
@@ -1432,7 +1439,7 @@ namespace GraduationProject
                 //Каркас + задник
                 var BlockGrid = new Grid()
                 {
-                    Margin = new Thickness(4, 0, 4, 8),
+                    Margin = new Thickness(4, 0, 4, 12),
                 };
 
                 var BackRectangle = new Rectangle()
@@ -1451,7 +1458,7 @@ namespace GraduationProject
                 {
                     Text = QuestionText[i],
                     FontSize = 16,
-                    Margin = new Thickness(4,0,0,0),
+                    Margin = new Thickness(4, 0, 0, 2),
                 };
                 BlockStackPanel.Children.Add(QuestionTextBlock);
 
@@ -1468,7 +1475,7 @@ namespace GraduationProject
                         }
                     }
 
-                    var ResultGrid = new Grid() { Margin = new Thickness(3, 0, 3, 4)};
+                    var ResultGrid = new Grid() { Margin = new Thickness(3, 0, 3, 4) };
                     if (count == 0)
                     {
                         ResultGrid.Children.Add(new Rectangle { Fill = Brushes.LightSlateGray, Height = 16, RadiusY = 2, RadiusX = 2 });
@@ -1482,7 +1489,7 @@ namespace GraduationProject
                     {
                         ResultGrid.Children.Add(new Rectangle { Fill = Brushes.LightGreen, Height = 16, RadiusY = 2, RadiusX = 2 });
 
-                        var AnswerTextBlockCount = new TextBlock {  Text = count.ToString() + " - 100%   " + answer.Text, Margin = new Thickness(4, 0, 0, 0) };
+                        var AnswerTextBlockCount = new TextBlock { Text = count.ToString() + " - 100%   " + answer.Text, Margin = new Thickness(4, 0, 0, 0) };
                         Grid.SetColumnSpan(AnswerTextBlockCount, 2);
 
                         ResultGrid.Children.Add(AnswerTextBlockCount);
@@ -1982,6 +1989,22 @@ namespace GraduationProject
                     NextQuestion();
                 }
             }
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            try
+            {
+                UsAc.ConnectClose();
+            }
+            catch { }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (Core.Visibility == Visibility.Visible)
+                if (MessageBox.Show("Выйти из программы и прервать опрос?", "Выход", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.No)
+                    e.Cancel = true;
         }
     }
 
