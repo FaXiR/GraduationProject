@@ -135,7 +135,7 @@
             </Grid>
             
             <!-- Опрос -->
-            <Grid x:Name="Core">                
+            <Grid Visibility="Hidden" x:Name="Core">                
 
             </Grid>
             
