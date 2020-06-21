@@ -260,7 +260,6 @@ namespace GraduationProject
             }
             catch
             {
-                MessageBox.Show("Файл параметров оказался битым, удалить его?", "Ошибка чтения файла с параметрами", MessageBoxButton.OK, MessageBoxImage.Error);
                 MessageBoxResult resultDeleteParametrsFile = MessageBox.Show("Файл с параметрами оказался битым, вы хотите его удалить?", "Ошибка чтения", MessageBoxButton.YesNo);
                 if (resultDeleteParametrsFile == MessageBoxResult.Yes)
                 {
@@ -288,6 +287,11 @@ namespace GraduationProject
                         Filter = "Файлы баз данных|*.mdb; *.accdb|Все файлы|*.*"
                     };
                     dialog.ShowDialog();
+
+                    if (dialog.FileName == "")
+                    {
+                        Environment.Exit(0);
+                    }
 
                     try
                     {
@@ -1485,7 +1489,7 @@ namespace GraduationProject
 
                         ResultGrid.Children.Add(AnswerTextBlockCount);
                     }
-                    if (count == ColumnResults.Count)
+                    else if (count == ColumnResults.Count)
                     {
                         ResultGrid.Children.Add(new Rectangle { Fill = Brushes.LightGreen, Height = 16, RadiusY = 2, RadiusX = 2 });
 
@@ -1772,7 +1776,15 @@ namespace GraduationProject
 
         private void F_Button_ClickToEnter(object sender, RoutedEventArgs e)
         {
-            AttemptEnter();
+            try
+            {
+                AttemptEnter();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+            
         }
 
         private void F_Button_ClickToEnterAtUser(object sender, RoutedEventArgs e)
@@ -2031,6 +2043,6 @@ namespace GraduationProject
         /// <summary>
         /// Название файла с содержимым для работы
         /// </summary>
-        public const string settingsFileName = "parameters.dat";
+        public const string settingsFileName = "parameters.txt";
     }
 }
